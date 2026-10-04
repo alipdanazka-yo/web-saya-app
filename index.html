@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abyss Store 👹 — Login + Unlock VIP per ID</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+  body {
+    min-height:100vh;
+    background: radial-gradient(circle at top,#1a0033,#000 70%);
+    color:#fff; padding:20px;
+  }
+  .wrap { max-width:860px; margin:0 auto; }
+
+  h1 {
+    text-align:center; font-size:26px; color:#c77dff;
+    text-shadow:0 0 14px #c77dff; margin-bottom:6px;
+  }
+  .sub { text-align:center; font-size:13px; color:#999; margin-bottom:26px; }
+
+  .panel {
+    background:rgba(20,0,40,0.85);
+    border:1px solid #7a00ff; border-radius:16px;
+    padding:22px; margin-bottom:18px;
+    box-shadow:0 0 25px #7a00ff55;
+  }
+  .panel h2 { font-size:16px; color:#c77dff; margin-bottom:14px; }
+
+  input, select, textarea {
+    width:100%; padding:12px; margin-bottom:12px;
+    background:#0d0018; border:1px solid #4a0080;
+    border-radius:10px; color:#fff; font-size:14px;
+    outline:none; font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color:#c77dff; box-shadow:0 0 10px #c77dff66;
+  }
+  textarea { resize:vertical; min-height:140px; }
+
+  button {
+    padding:12px 18px; border:none; border-radius:10px;
+    background:linear-gradient(90deg,#7a00ff,#c77dff);
+    color:#fff; font-weight:bold; font-size:14px;
+    cursor:pointer; transition:0.2s; letter-spacing:0.5px;
+  }
+  button:hover { transform:scale(1.02); box-shadow:0 0 18px #c77dff; }
+  button.ghost { background:transparent; border:1px solid #7a00ff; color:#c77dff; }
+  button.green { background:linear-gradient(90deg,#00a34d,#4dff88); }
+  button.mini { padding:6px 10px; font-size:11px; border-radius:8px; }
+
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+
+  .qrBox { margin-top:16px; text-align:center; display:none; }
+  .qrBox.show { display:block; animation:fade 0.5s; }
+  @keyframes fade { from{opacity:0} to{opacity:1} }
+  #qrcode { display:inline-block; padding:12px; background:#fff; border-radius:12px; }
+  .info { margin-top:14px; font-size:13px; color:#c77dff; line-height:1.7; text-align:left; }
+  .info span { color:#fff; font-weight:bold; }
+
+  .status {
+    margin-top:14px; padding:12px; border-radius:10px;
+    text-align:center; font-size:13px;
+    background:#1a0000; color:#ff8080; border:1px solid #ff4d6d55;
+  }
+  .status.ok { background:#001a0d; color:#4dff88; border-color:#4dff8855; }
+
+  .locked {
+    background:#0d0018; border:1px dashed #ff4d6d;
+    border-radius:12px; padding:20px; text-align:center; color:#ff4d6d;
+  }
+  .locked .blur {
+    filter:blur(6px); user-select:none; pointer-events:none;
+    color:#555; font-size:13px; line-height:1.6;
+    max-height:100px; overflow:hidden;
+  }
+  #bonusContent {
+    display:none; background:#001a0d; border:1px solid #4dff88;
+    border-radius:12px; padding:18px; color:#d4ffe6;
+    line-height:1.7; white-space:pre-wrap;
+  }
+  #bonusContent.show { display:block; animation:fade 0.5s; }
+
+  .badge {
+    display:inline-block; padding:4px 10px; border-radius:20px;
+    font-size:11px; font-weight:bold; letter-spacing:1px;
+  }
+  .badge.locked { background:#3a0010; color:#ff4d6d; border:1px solid #ff4d6d; }
+  .badge.vip { background:#003a1a; color:#4dff88; border:1px solid #4dff88; }
+
+  .owner-bar {
+    font-size:12px; color:#888; text-align:right; margin-bottom:12px;
+  }
+  .owner-bar a { color:#c77dff; cursor:pointer; text-decoration:underline; }
+
+  /* LOGIN SCREEN */
+  #loginScreen {
+    position:fixed; inset:0; z-index:999;
+    background:radial-gradient(circle at top,#1a0033,#000 70%);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .loginBox {
+    background:rgba(20,0,40,0.95);
+    border:1px solid #7a00ff; border-radius:20px;
+    padding:32px; width:100%; max-width:400px;
+    box-shadow:0 0 50px #7a00ff88;
+    text-align:center;
+  }
+  .loginBox h1 { font-size:22px; margin-bottom:6px; }
+  .loginBox p { font-size:12px; color:#999; margin-bottom:20px; }
+  .loginBox input { margin-bottom:12px; }
+  .loginBox .row button { flex:1; }
+
+  /* ID BAR */
+  .idbar {
+    background:#0d0018; border:1px solid #4a0080; border-radius:12px;
+    padding:12px 16px; margin-bottom:18px;
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:10px; font-size:13px;
+  }
+  .idbar .myid { color:#4dff88; font-weight:bold; font-family:monospace; font-size:14px; }
+  .idbar .userinfo { color:#c77dff; font-size:12px; }
+
+  /* PANEL PENJUAL */
+  .unlockBox {
+    background:#001a0d; border:1px dashed #4dff88;
+    border-radius:12px; padding:16px; margin-bottom:14px;
+  }
+  .unlockBox h3 { font-size:14px; color:#4dff88; margin-bottom:10px; }
+  .unlockBox input { margin-bottom:10px; }
+
+  .orderCard {
+    background:#0d0018; border:1px solid #4a0080;
+    border-radius:10px; padding:12px; margin-bottom:10px; font-size:12px;
+    line-height:1.7;
+  }
+  .orderCard b { color:#c77dff; }
+  .orderCard .idTag { color:#4dff88; font-family:monospace; }
+
+  /* PROMPT LIBRARY */
+  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab {
+    padding:8px 16px; border-radius:20px; cursor:pointer;
+    background:#0d0018; border:1px solid #4a0080;
+    color:#bbb; font-size:13px; transition:0.2s;
+  }
+  .tab.active {
+    background:linear-gradient(90deg,#7a00ff,#c77dff);
+    color:#fff; border-color:#c77dff;
+    box-shadow:0 0 12px #c77dff88;
+  }
+  .promptItem {
+    background:#0d0018; border:1px solid #4a0080;
+    border-radius:12px; padding:14px; margin-bottom:12px;
+  }
+  .promptItem .head {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:8px; flex-wrap:wrap; gap:8px;
+  }
+  .promptItem .title { font-weight:bold; color:#c77dff; font-size:14px; }
+  .promptItem .meta { font-size:11px; color:#888; }
+  .promptItem .body {
+    font-size:13px; color:#ddd; line-height:1.6;
+    white-space:pre-wrap; word-break:break-word;
+    max-height:140px; overflow:auto;
+    background:#06000d; padding:10px; border-radius:8px;
+    border:1px solid #2a0050;
+  }
+  .promptItem .actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .charCount { font-size:11px; color:#888; text-align:right; margin-top:-8px; margin-bottom:10px; }
+  .charCount b { color:#4dff88; }
+  .empty { font-size:13px; color:#666; text-align:center; padding:20px; font-style:italic; }
+
+  /* KATALOG */
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:14px;
+  }
+  .card {
+    background:#0d0018; border:1px solid #4a0080;
+    border-radius:14px; padding:16px;
+    transition:0.25s; cursor:pointer;
+  }
+  .card:hover {
+    border-color:#c77dff;
+    box-shadow:0 0 20px #c77dff66;
+    transform:translateY(-3px);
+  }
+  .card .thumb {
+    height:110px; border-radius:10px; margin-bottom:12px;
+    background:linear-gradient(135deg,#2a0050,#7a00ff);
+    display:flex; align-items:center; justify-content:center;
+    font-size:38px;
+  }
+  .card h3 { font-size:15px; margin-bottom:6px; color:#fff; }
+  .card .price { color:#4dff88; font-weight:bold; font-size:15px; }
+  .card .old { color:#888; text-decoration:line-through; font-size:12px; margin-left:6px; }
+  .card .tag {
+    display:inline-block; margin-top:8px;
+    padding:3px 8px; border-radius:20px; font-size:10px;
+    background:#3a0010; color:#ff4d6d; border:1px solid #ff4d6d;
+  }
+
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div id="loginScreen">
+  <div class="loginBox">
+    <h1>👹 ABYSS STORE 👹</h1>
+    <p>Login dulu buat masuk. Wajib nama & password.</p>
+
+    <input type="text" id="loginNama" placeholder="Nama lo">
+    <input type="password" id="loginPass" placeholder="Password">
+
+    <div class="row">
+      <button onclick="doLogin()">🔓 Login</button>
+      <button class="ghost" onclick="doRegister()">📝 Daftar</button>
+    </div>
+
+    <div class="status" id="loginStatus" style="display:none;"></div>
+
+    <p style="font-size:11px;color:#666;margin-top:16px;">
+      Password disimpan lokal di browser lo (simulasi). Di produksi wajib backend.
+    </p>
+  </div>
+</div>
+
+<!-- ================= MAIN APP ================= -->
+<div class="wrap" id="mainApp" style="display:none;">
+
+  <div class="owner-bar">
+    <span id="roleLabel">Mode: Pembeli</span> •
+    <a onclick="toggleOwner()" id="ownerToggle">Login Penjual</a> •
+    <a onclick="logout()">Logout</a>
+  </div>
+
+  <h1>👹 ABYSS STORE 👹</h1>
+  <p class="sub">Login + Unlock VIP per ID • QRIS Instan</p>
+
+  <!-- ID BAR -->
+  <div class="idbar">
+    <div>
+      🆔 ID lo: <span class="myid" id="myIdDisplay">-</span><br>
+      <span class="userinfo" id="myUserInfo"></span>
+    </div>
+    <div>
+      <button class="ghost mini" onclick="copyMyId()">📋 Copy ID</button>
+    </div>
+  </div>
+
+  <!-- PROMPT LIBRARY FREE -->
+  <div class="panel">
+    <h2>📚 Prompt Library <span class="badge vip">FREE</span></h2>
+    <input type="text" id="promptJudul" placeholder="Judul prompt">
+    <textarea id="promptIsi" placeholder="Tulis prompt panjang di sini..."></textarea>
+    <div class="charCount">Karakter: <b id="charCounter">0</b> / ∞</div>
+    <div class="row">
+      <button class="green" onclick="simpanPrompt()" id="btnSimpanPrompt">💾 Simpan</button>
+      <button class="ghost" onclick="resetEditor()">🔄 Reset</button>
+    </div>
+    <hr style="border-color:#4a0080; margin:18px 0;">
+    <div class="tabs">
+      <div class="tab active" data-filter="all" onclick="setFilter('all')">Semua</div>
+      <div class="tab" data-filter="favorit" onclick="setFilter('favorit')">⭐ Favorit</div>
+      <div class="tab" data-filter="terbaru" onclick="setFilter('terbaru')">🆕 Terbaru</div>
+    </div>
+    <input type="text" id="searchPrompt" placeholder="🔍 Cari prompt..." oninput="renderLibrary()" style="margin-bottom:14px;">
+    <div id="libraryList"><div class="empty">Belum ada prompt. 👹</div></div>
+    <div class="row" style="margin-top:14px;">
+      <button class="ghost mini" onclick="exportLibrary()">⬇️ Export</button>
+      <button class="ghost mini" onclick="document.getElementById('importFile').click()">⬆️ Import</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importLibrary(event)">
+      <button class="ghost mini" onclick="clearLibrary()">🗑️ Hapus Semua</button>
+    </div>
+  </div>
+
+  <!-- KATALOG -->
+  <div class="panel">
+    <h2>🛒 Katalog Produk</h2>
+    <div class="grid" id="productGrid"></div>
+  </div>
+
+  <!-- FORM ORDER -->
+  <div class="panel">
+    <h2>📝 Form Pemesanan VIP</h2>
+    <p style="font-size:12px;color:#aaa;margin-bottom:14px;">
+      Isi nomor lo + kirim bukti QRIS. Setelah penjual unlock ID lo, VIP kebuka.
+    </p>
+    <select id="pilihProduk"></select>
+    <input type="text" id="namaPembeli" placeholder="Nama lo" readonly>
+    <input type="text" id="nomorPembeli" placeholder="Nomor HP / WA lo (wajib)">
+
+    <button onclick="buatQR()">💸 Buat QRIS + Isi Nomor</button>
+
+    <div class="qrBox" id="qrBox">
+      <div id="qrcode"></div>
+      <div class="info">
+        Produk: <span id="outProduk"></span><br>
+        Nama: <span id="outNama"></span><br>
+        Nomor: <span id="outNomor"></span><br>
+        ID Lo: <span id="outId"></span><br>
+        Total: <span id="outTotal"></span><br>
+        Kode Order: <span id="outKode"></span>
+      </div>
+      <div class="status" id="payStatus">⏳ Menunggu pembayaran...</div>
+      <div class="row" style="margin-top:12px;">
+        <input type="text" id="buktiId" placeholder="Tempel ID bukti transfer">
+        <button onclick="kirimBukti()">📤 Kirim Bukti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIP BONUS -->
+  <div class="panel">
+    <h2>🎁 Prompt VIP <span class="badge locked" id="bonusBadge">LOCKED</span></h2>
+
+    <div id="ownerBonusEditor" style="display:none;">
+      <textarea id="bonusText" placeholder="Tulis isi Prompt VIP — unlimited karakter..."></textarea>
+      <button onclick="saveBonus()">💾 Simpan Prompt VIP</button>
+      <hr style="border-color:#4a0080; margin:16px 0;">
+    </div>
+
+    <div id="lockedView">
+      <div class="locked">
+        <div style="font-size:36px;margin-bottom:10px;">🔒</div>
+        <div class="blur">Konten VIP rahasia... hanya terbuka untuk ID yang udah di-unlock penjual. Yang lain wajib beli & kirim bukti dulu.</div>
+        <p style="margin-top:14px;font-size:13px;">
+          Order dulu + kirim bukti QRIS buat unlock ID lo
+        </p>
+      </div>
+    </div>
+
+    <div id="bonusContent"></div>
+  </div>
+
+  <!-- PANEL PENJUAL -->
+  <div class="panel hidden" id="ownerPanel">
+    <h2>🔓 Panel Penjual</h2>
+
+    <div class="unlockBox">
+      <h3>⚡ Unlock Cepat via ID</h3>
+      <p style="font-size:12px;color:#aaa;margin-bottom:10px;">
+        Tempel ID pembeli di bawah → Enter → cuma ID itu yang kebuka.
+      </p>
+      <input type="text" id="unlockIdInput" placeholder="Tempel ID pembeli di sini (contoh: ABY-abc123)"
+             onkeydown="if(event.key==='Enter'){ownerUnlockById();}">
+      <button class="green" onclick="ownerUnlockById()">🔓 Unlock ID Ini</button>
+      <div class="status" id="ownerStatus" style="display:none;"></div>
+    </div>
+
+    <hr style="border-color:#4a0080; margin:18px 0;">
+    <h2>📥 Order Masuk</h2>
+    <div id="orderList"><em style="font-size:13px;color:#666;">Belum ada order.</em></div>
+
+    <hr style="border-color:#4a0080; margin:18px 0;">
+    <h2>👥 ID Ter-unlock</h2>
+    <div id="unlockedList"><em style="font-size:13px;color:#666;">Belum ada.</em></div>
+
+    <hr style="border-color:#4a0080; margin:18px 0;">
+    <h2>📊 Statistik</h2>
+    <div id="stats" style="font-size:13px;color:#c77dff;line-height:1.9;"></div>
+  </div>
+
+</div>
+
+<script>
+/* ============ KONFIG ============ */
+const OWNER_PASS = 'abyss123';
+const QRIS_MERCHANT = 'Abyss Store';
+const QRIS_NMID = 'ID1024000000000';
+
+const DEFAULT_PRODUCTS = [
+  { id:'P1', nama:'Prompt VIP Unlimited', harga:25000, hargaAsli:50000, emoji:'👹', tag:'BEST SELLER' },
+  { id:'P2', nama:'Paket Template HTML',  harga:15000, hargaAsli:30000, emoji:'💻', tag:'HEMAT' },
+  { id:'P3', nama:'Jasa Setting QRIS',    harga:35000, hargaAsli:75000, emoji:'📱', tag:'POPULER' },
+  { id:'P4', nama:'Akses Grup Rahasia',   harga:20000, hargaAsli:40000, emoji:'🔐', tag:'LIMITED' }
+];
+
+const LS = {
+  produk:   'abyss_products',
+  bonus:    'abyss_bonus',
+  orders:   'abyss_orders',
+  unlocked: 'abyss_unlocked_ids',
+  library:  'abyss_prompt_library',
+  users:    'abyss_users',
+  session:  'abyss_session'
+};
+
+/* ============ HELPER ============ */
+function getProducts() {
+  const raw = localStorage.getItem(LS.produk);
+  if (!raw) { localStorage.setItem(LS.produk, JSON.stringify(DEFAULT_PRODUCTS)); return DEFAULT_PRODUCTS; }
+  return JSON.parse(raw);
+}
+function getBonus()    { return localStorage.getItem(LS.bonus) || '(Prompt VIP belum diisi Penjual)'; }
+function getOrders()   { return JSON.parse(localStorage.getItem(LS.orders) || '[]'); }
+function getUnlocked() { return JSON.parse(localStorage.getItem(LS.unlocked) || '[]'); }
+function getLibrary()  { return JSON.parse(localStorage.getItem(LS.library) || '[]'); }
+function setLibrary(v) { localStorage.setItem(LS.library, JSON.stringify(v)); }
+function getUsers()    { return JSON.parse(localStorage.getItem(LS.users) || '{}'); }
+function setUsers(v)   { localStorage.setItem(LS.users, JSON.stringify(v)); }
+
+/* ============ AUTH ============ */
+let currentUser = null;
+
+function doRegister() {
+  const nama = document.getElementById('loginNama').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  if (!nama || !pass) { showLoginStatus('Isi nama & password dulu boss 👹', false); return; }
+  if (nama.length < 3) { showLoginStatus('Nama minimal 3 karakter', false); return; }
+  if (pass.length < 4) { showLoginStatus('Password minimal 4 karakter', false); return; }
+
+  const users = getUsers();
+  if (users[nama]) { showLoginStatus('Nama udah dipakai. Coba login.', false); return; }
+
+  const id = 'ABY-' + Math.random().toString(36).slice(2,8);
+  users[nama] = { pass, id, created: new Date().toLocaleString() };
+  setUsers(users);
+
+  showLoginStatus(`✅ Daftar sukses! ID lo: ${id}. Silakan login.`, true);
+  document.getElementById('loginPass').value = '';
+}
+
+function doLogin() {
+  const nama = document.getElementById('loginNama').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  if (!nama || !pass) { showLoginStatus('Isi nama & password dulu 👹', false); return; }
+
+  const users = getUsers();
+  if (!users[nama]) { showLoginStatus('Nama belum terdaftar. Klik Daftar.', false); return; }
+  if (users[nama].pass !== pass) { showLoginStatus('Password salah 👹', false); return; }
+
+  currentUser = { nama, id: users[nama].id };
+  localStorage.setItem(LS.session, JSON.stringify(currentUser));
+  masukApp();
+}
+
+function logout() {
+  if (!confirm('Logout, boss? 👹')) return;
+  localStorage.removeItem(LS.session);
+  currentUser = null;
+  location.reload();
+}
+
+function showLoginStatus(msg, ok) {
+  const el = document.getElementById('loginStatus');
+  el.style.display = 'block';
+  el.className = 'status' + (ok ? ' ok' : '');
+  el.innerText = msg;
+}
+
+function masukApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+
+  document.getElementById('myIdDisplay').innerText = currentUser.id;
+  document.getElementById('myUserInfo').innerText = 'Login sebagai: ' + currentUser.nama;
+  document.getElementById('namaPembeli').value = currentUser.nama;
+
+  renderKatalog();
+  renderBonus();
+  renderStats();
+  renderLibrary();
+  renderOrderList();
+  renderUnlockedList();
+}
+
+/* auto-login kalau session masih ada */
+(function autoLogin() {
+  const s = localStorage.getItem(LS.session);
+  if (s) {
+    try {
+      currentUser = JSON.parse(s);
+      masukApp();
+    } catch {}
+  }
+})();
+
+/* ============ COPY ID ============ */
+function copyMyId() {
+  if (!currentUser) return;
+  navigator.clipboard.writeText(currentUser.id).then(() =>
+    alert('ID lo dicopy: ' + currentUser.id + ' 👹')
+  );
+}
+
+/* ============ PROMPT LIBRARY ============ */
+let editingId = null;
+let currentFilter = 'all';
+
+document.getElementById('promptIsi').addEventListener('input', e => {
+  document.getElementById('charCounter').innerText = e.target.value.length.toLocaleString('id-ID');
+});
+
+function simpanPrompt() {
+  const judul = document.getElementById('promptJudul').value.trim();
+  const isi = document.getElementById('promptIsi').value;
+  if (!judul) { alert('Isi judul dulu 👹'); return; }
+  if (!isi.trim()) { alert('Prompt masih kosong 👹'); return; }
+
+  const lib = getLibrary();
+  if (editingId) {
+    const idx = lib.findIndex(p => p.id === editingId);
+    if (idx >= 0) {
+      lib[idx].judul = judul; lib[idx].isi = isi;
+      lib[idx].updated = new Date().toLocaleString();
+    }
+    editingId = null;
+    document.getElementById('btnSimpanPrompt').innerText = '💾 Simpan';
+  } else {
+    lib.push({
+      id: 'PR-' + Date.now(),
+      judul, isi, favorit: false,
+      created: new Date().toLocaleString(),
+      updated: new Date().toLocaleString()
+    });
+  }
+  setLibrary(lib); resetEditor(); renderLibrary();
+}
+function resetEditor() {
+  document.getElementById('promptJudul').value = '';
+  document.getElementById('promptIsi').value = '';
+  document.getElementById('charCounter').innerText = '0';
+  editingId = null;
+  document.getElementById('btnSimpanPrompt').innerText = '💾 Simpan';
+}
+function editPrompt(id) {
+  const p = getLibrary().find(x => x.id === id); if (!p) return;
+  document.getElementById('promptJudul').value = p.judul;
+  document.getElementById('promptIsi').value = p.isi;
+  document.getElementById('charCounter').innerText = p.isi.length.toLocaleString('id-ID');
+  editingId = id;
+  document.getElementById('btnSimpanPrompt').innerText = '💾 Update';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function hapusPrompt(id) {
+  if (!confirm('Hapus prompt ini? 👹')) return;
+  setLibrary(getLibrary().filter(p => p.id !== id)); renderLibrary();
+}
+function toggleFavorit(id) {
+  const lib = getLibrary();
+  const p = lib.find(x => x.id === id); if (!p) return;
+  p.favorit = !p.favorit; setLibrary(lib); renderLibrary();
+}
+function copyPrompt(id) {
+  const p = getLibrary().find(x => x.id === id); if (!p) return;
+  navigator.clipboard.writeText(p.isi).then(() => alert('Prompt dicopy 👹'))
+  .catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = p.isi; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove(); alert('Prompt dicopy 👹');
+  });
+}
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.filter === f));
+  renderLibrary();
+}
+function renderLibrary() {
+  const lib = getLibrary();
+  const q = (document.getElementById('searchPrompt').value || '').toLowerCase();
+  const el = document.getElementById('libraryList');
+  let f = lib.slice();
+  if (currentFilter === 'favorit') f = f.filter(p => p.favorit);
+  if (currentFilter === 'terbaru') f = f.sort((a,b) => b.id.localeCompare(a.id));
+  if (q) f = f.filter(p => p.judul.toLowerCase().includes(q) || p.isi.toLowerCase().includes(q));
+
+  if (f.length === 0) { el.innerHTML = '<div class="empty">Belum ada prompt. 👹</div>'; return; }
+  el.innerHTML = f.map(p => `
+    <div class="promptItem">
+      <div class="head">
+        <div class="title">${p.favorit ? '⭐ ' : ''}${escapeHtml(p.judul)}</div>
+        <div class="meta">${p.isi.length.toLocaleString('id-ID')} char • ${p.updated}</div>
+      </div>
+      <div class="body">${escapeHtml(p.isi)}</div>
+      <div class="actions">
+        <button class="ghost mini" onclick="copyPrompt('${p.id}')">📋 Copy</button>
+        <button class="ghost mini" onclick="editPrompt('${p.id}')">✏️ Edit</button>
+        <button class="ghost mini" onclick="toggleFavorit('${p.id}')">${p.favorit ? '★ Unfav' : '☆ Fav'}</button>
+        <button class="ghost mini" onclick="hapusPrompt('${p.id}')" style="border-color:#ff4d6d;color:#ff4d6d;">🗑️ Hapus</button>
+      </div>
+    </div>
+  `).join('');
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function exportLibrary() {
+  const blob = new Blob([JSON.stringify(getLibrary(), null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'abyss-prompt-library.json';
+  a.click();
+}
+function importLibrary(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error('bad');
+      const lib = getLibrary();
+      data.forEach(p => {
+        if (p.judul && p.isi) {
+          lib.push({
+            id: 'PR-' + Date.now() + Math.random().toString(36).slice(2,6),
+            judul: p.judul, isi: p.isi, favorit: !!p.favorit,
+            created: p.created || new Date().toLocaleString(),
+            updated: new Date().toLocaleString()
+          });
+        }
+      });
+      setLibrary(lib); renderLibrary(); alert('Import sukses 👹');
+    } catch { alert('File JSON tidak valid 👹'); }
+  };
+  reader.readAsText(file); e.target.value = '';
+}
+function clearLibrary() {
+  if (!confirm('Hapus SEMUA prompt? 👹')) return;
+  setLibrary([]); renderLibrary();
+}
+
+/* ============ KATALOG ============ */
+function renderKatalog() {
+  const grid = document.getElementById('productGrid');
+  const prods = getProducts();
+  grid.innerHTML = prods.map(p => `
+    <div class="card" onclick="pilihDariCard('${p.id}')">
+      <div class="thumb">${p.emoji}</div>
+      <h3>${p.nama}</h3>
+      <div class="price">Rp ${p.harga.toLocaleString('id-ID')}
+        <span class="old">Rp ${p.hargaAsli.toLocaleString('id-ID')}</span>
+      </div>
+      <div class="tag">${p.tag}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('pilihProduk').innerHTML = prods.map(p =>
+    `<option value="${p.id}">${p.nama} — Rp ${p.harga.toLocaleString('id-ID')}</option>`
+  ).join('');
+}
+function pilihDariCard(id) {
+  document.getElementById('pilihProduk').value = id;
+  document.getElementById('pilihProduk').scrollIntoView({behavior:'smooth'});
+}
+
+/* ============ QR + ORDER ============ */
+let currentOrder = null;
+function buatQR() {
+  const produkId = document.getElementById('pilihProduk').value;
+  const nama = currentUser.nama;
+  const nomor = document.getElementById('nomorPembeli').value.trim();
+  if (!nomor) { alert('Isi nomor lo dulu boss 👹'); return; }
+
+  const produk = getProducts().find(p => p.id === produkId);
+  const kode = 'ABY-' + Math.floor(1000 + Math.random() * 9000);
+
+  currentOrder = {
+    kode, produk: produk.nama, harga: produk.harga,
+    nama, nomor, idPembeli: currentUser.id,
+    waktu: new Date().toLocaleString(), status:'baru'
+  };
+
+  const payload = `00020101021226|${QRIS_NMID}|${QRIS_MERCHANT}|${produk.harga}|${kode}|${currentUser.id}`;
+  document.getElementById('qrcode').innerHTML = '';
+  new QRCode(document.getElementById('qrcode'), { text: payload, width: 200, height: 200 });
+
+  document.getElementById('outProduk').innerText = produk.nama;
+  document.getElementById('outNama').innerText = nama;
+  document.getElementById('outNomor').innerText = nomor;
+  document.getElementById('outId').innerText = currentUser.id;
+  document.getElementById('outTotal').innerText = 'Rp ' + produk.harga.toLocaleString('id-ID');
+  document.getElementById('outKode').innerText = kode;
+  document.getElementById('qrBox').classList.add('show');
+
+  const orders = getOrders();
+  orders.push(currentOrder);
+  localStorage.setItem(LS.orders, JSON.stringify(orders));
+  renderOrderList(); renderStats();
+}
+
+function kirimBukti() {
+  const bukti = document.getElementById('buktiId').value.trim();
+  if (!bukti || !currentOrder) { alert('Buat QR dulu & isi bukti 👹'); return; }
+
+  const orders = getOrders();
+  const idx = orders.findIndex(o => o.kode === currentOrder.kode);
+  if (idx >= 0) { orders[idx].bukti = bukti; orders[idx].status = 'menunggu'; }
+  localStorage.setItem(LS.orders, JSON.stringify(orders));
+
+  const st = document.getElementById('payStatus');
+  st.className = 'status ok';
+  st.innerText = '✅ Bukti terkirim. Tunggu Penjual unlock ID lo (' + currentUser.id + ')...';
+  renderOrderList();
+}
+
+/* ============ VIP ============ */
+function renderBonus() {
+  if (!currentUser) return;
+  const badge = document.getElementById('bonusBadge');
+  const locked = document.getElementById('lockedView');
+  const content = document.getElementById('bonusContent');
+
+  if (getUnlocked().includes(currentUser.id)) {
+    badge.className = 'badge vip';
+    badge.innerText = 'UNLOCKED';
+    locked.style.display = 'none';
+    content.innerText = getBonus();
+    content.classList.add('show');
+  } else {
+    badge.className = 'badge locked';
+    badge.innerText = 'LOCKED';
+    locked.style.display = 'block';
+    content.classList.remove('show');
+    content.innerText = '';
+  }
+}
+function saveBonus() {
+  localStorage.setItem(LS.bonus, document.getElementById('bonusText').value);
+  alert('Prompt VIP disimpan 👹');
+}
+
+/* ============ PANEL PENJUAL ============ */
+let ownerMode = false;
+function toggleOwner() {
+  if (!ownerMode) {
+    const pass = prompt('Password Penjual:');
+    if (pass !== OWNER_PASS) { alert('Salah 👹'); return; }
+    ownerMode = true;
+    document.getElementById('roleLabel').innerText = 'Mode: PENJUAL';
+    document.getElementById('ownerToggle').innerText = 'Logout Penjual';
+    document.getElementById('ownerPanel').classList.remove('hidden');
+    document.getElementById('ownerBonusEditor').style.display = 'block';
+    document.getElementById('bonusText').value = localStorage.getItem(LS.bonus) || '';
+    renderOrderList(); renderUnlockedList(); renderStats();
+  } else {
+    ownerMode = false;
+    document.getElementById('roleLabel').innerText = 'Mode: Pembeli';
+    document.getElementById('ownerToggle').innerText = 'Login Penjual';
+    document.getElementById('ownerPanel').classList.add('hidden');
+    document.getElementById('ownerBonusEditor').style.display = 'none';
+  }
+}
+
+/* ===== UNLOCK VIA ID (tempel + Enter) ===== */
+function ownerUnlockById() {
+  const id = document.getElementById('unlockIdInput').value.trim();
+  if (!id) { alert('Tempel ID pembeli dulu 👹'); return; }
+
+  const users = getUsers();
+  const found = Object.values(users).find(u => u.id === id);
+  if (!found) {
+    const st = document.getElementById('ownerStatus');
+    st.style.display = 'block';
+    st.className = 'status';
+    st.innerText = `⚠️ ID "${id}" ga terdaftar. Pastikan bener.`;
+    return;
+  }
+
+  const list = getUnlocked();
+  if (!list.includes(id)) {
+    list.push(id);
+    localStorage.setItem(LS.unlocked, JSON.stringify(list));
+  }
+
+  const orders = getOrders();
+  orders.forEach(o => { if (o.idPembeli === id) o.status = 'selesai'; });
+  localStorage.setItem(LS.orders, JSON.stringify(orders));
+
+  const st = document.getElementById('ownerStatus');
+  st.style.display = 'block';
+  st.className = 'status ok';
+  st.innerText = `✅ ID "${id}" di-unlock. Cuma dia yang bisa akses VIP.`;
+
+  document.getElementById('unlockIdInput').value = '';
+  renderBonus(); renderOrderList(); renderUnlockedList(); renderStats();
+}
+
+function renderOrderList() {
+  const list = getOrders();
+  const el = document.getElementById('orderList');
+  if (list.length === 0) { el.innerHTML = '<em style="font-size:13px;color:#666;">Belum ada order.</em>'; return; }
+  el.innerHTML = list.map((o, i) => `
+    <div class="orderCard">
+      ${i+1}. <b>${o.kode}</b> • ${o.produk} • Rp ${o.harga.toLocaleString('id-ID')}<br>
+      Nama: ${o.nama} • Nomor: <b>${o.nomor || '-'}</b><br>
+      ID: <span class="idTag">${o.idPembeli}</span> • Status: ${o.status} • Bukti: ${o.bukti || '-'}<br>
+      Waktu: ${o.waktu}
+      <div class="row" style="margin-top:8px;">
+        <button class="ghost mini" onclick="quickUnlock('${o.idPembeli}')">🔓 Unlock ID ini</button>
+        <button class="ghost mini" onclick="copyText('${o.idPembeli}')">📋 Copy ID</button>
+      </div>
+    </div>
+  `).join('');
+}
+function quickUnlock(id) {
+  document.getElementById('unlockIdInput').value = id;
+  ownerUnlockById();
+}
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(() => alert('Dicopy: ' + t + ' 👹'));
+}
+function renderUnlockedList() {
+  const list = getUnlocked();
+  const el = document.getElementById('unlockedList');
+  if (list.length === 0) { el.innerHTML = '<em style="font-size:13px;color:#666;">Belum ada.</em>'; return; }
+  el.innerHTML = list.map(id =>
+    `✅ <span style="font-family:monospace;color:#4dff88;">${id}</span>
+     <button class="ghost mini" style="margin-left:8px;border-color:#ff4d6d;color:#ff4d6d;"
+       onclick="revokeUnlock('${id}')">Revoke</button>`
+  ).join('<br>');
+}
+function revokeUnlock(id) {
+  if (!confirm(`Cabut unlock buat ${id}? 👹`)) return;
+  const list = getUnlocked().filter(x => x !== id);
+  localStorage.setItem(LS.unlocked, JSON.stringify(list));
+  renderBonus(); renderUnlockedList(); renderStats();
+}
+function renderStats() {
+  const orders = getOrders();
+  const selesai = orders.filter(o => o.status === 'selesai');
+  const total = selesai.reduce((a, o) => a + o.harga, 0);
+  document.getElementById('stats').innerHTML = `
+    Total Order: <b>${orders.length}</b><br>
+    Selesai: <b>${selesai.length}</b><br>
+    ID Ter-unlock: <b>${getUnlocked().length}</b><br>
+    Pendapatan: <b>Rp ${total.toLocaleString('id-ID')}</b>
+  `;
+}
+</script>
+</body>
+</html>
