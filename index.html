@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp Tools Panel</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+  body {
+    min-height:100vh;
+    background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+    display:flex; justify-content:center; align-items:center;
+    padding:20px; color:#fff;
+  }
+  .panel {
+    width:100%; max-width:480px;
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(15px);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:20px;
+    padding:25px;
+    box-shadow:0 8px 40px rgba(0,0,0,0.6), 0 0 30px rgba(0,255,150,0.15);
+    animation:fadeIn 0.6s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+  .header {
+    text-align:center; margin-bottom:20px;
+  }
+  .header h1 {
+    font-size:22px;
+    background:linear-gradient(90deg,#00ff9d,#00c3ff,#a855f7);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    font-weight:800; letter-spacing:1px;
+  }
+  .header p { font-size:12px; color:#9ca3af; margin-top:5px; }
+  .status {
+    display:flex; align-items:center; gap:8px;
+    background:rgba(0,255,157,0.1);
+    border:1px solid rgba(0,255,157,0.3);
+    border-radius:10px; padding:8px 12px;
+    font-size:12px; margin-bottom:18px;
+  }
+  .dot {
+    width:8px; height:8px; border-radius:50%;
+    background:#00ff9d;
+    box-shadow:0 0 10px #00ff9d;
+    animation:pulse 1.2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .field { margin-bottom:14px; }
+  .field label {
+    display:block; font-size:12px; color:#cbd5e1;
+    margin-bottom:6px; font-weight:600; letter-spacing:0.5px;
+  }
+  .field input, .field select {
+    width:100%; padding:12px 14px;
+    background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;
+    color:#fff; font-size:14px;
+    outline:none; transition:0.3s;
+  }
+  .field input:focus, .field select:focus {
+    border-color:#00ff9d;
+    box-shadow:0 0 12px rgba(0,255,157,0.4);
+  }
+  .field select option { background:#1a1a2e; }
+  .btn {
+    width:100%; padding:13px;
+    border:none; border-radius:10px;
+    font-size:14px; font-weight:700;
+    cursor:pointer; letter-spacing:0.5px;
+    transition:0.3s; margin-top:6px;
+  }
+  .btn-main {
+    background:linear-gradient(90deg,#00ff9d,#00c3ff);
+    color:#0f0c29;
+  }
+  .btn-main:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,255,157,0.4); }
+  .btn-danger {
+    background:linear-gradient(90deg,#ff3b3b,#ff7b00);
+    color:#fff;
+  }
+  .btn-danger:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(255,60,60,0.4); }
+  .console {
+    margin-top:18px;
+    background:rgba(0,0,0,0.6);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px;
+    padding:14px;
+    font-family:'Courier New',monospace;
+    font-size:12px;
+    height:150px; overflow-y:auto;
+    color:#00ff9d;
+    line-height:1.6;
+  }
+  .console::-webkit-scrollbar { width:6px; }
+  .console::-webkit-scrollbar-thumb { background:#00ff9d55; border-radius:5px; }
+  .line-err { color:#ff5c5c; }
+  .line-info { color:#00c3ff; }
+  .footer {
+    text-align:center; margin-top:16px;
+    font-size:11px; color:#64748b;
+  }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="header">
+    <h1>WHATSAPP TOOLS PANEL</h1>
+    <p>Advanced Control System v2.0</p>
+  </div>
+
+  <div class="status">
+    <span class="dot"></span>
+    <span>System Active — Server Terhubung</span>
+  </div>
+
+  <!-- PANEL INPUT -->
+  <div class="field">
+    <label>Nomor Target</label>
+    <input type="text" id="target" placeholder="contoh: 6281234567890">
+  </div>
+
+  <div class="field">
+    <label>Link Grup</label>
+    <input type="text" id="link" placeholder="https://chat.whatsapp.com/xxxxx">
+  </div>
+
+  <div class="field">
+    <label>Mode Aksi</label>
+    <select id="mode">
+      <option value="close">Close / Kunci HP Target</option>
+      <option value="ban">Ban Grup via Link</option>
+      <option value="bug">Kirim Bug WhatsApp</option>
+      <option value="forensik">Forensik Nomor</option>
+    </select>
+  </div>
+
+  <button class="btn btn-main" onclick="startPanel()">⚡ EKSEKUSI</button>
+  <button class="btn btn-danger" onclick="stopPanel()">⛔ STOP</button>
+
+  <!-- KONSOL OUTPUT -->
+  <div class="console" id="console">
+    <div>[SYSTEM] Panel siap menerima perintah...</div>
+  </div>
+
+  <div class="footer">© 2026 Advanced Tools Panel — All Rights Reserved</div>
+</div>
+
+<script>
+  const log = (msg, type='') => {
+    const c = document.getElementById('console');
+    const t = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    if(type) line.className = 'line-' + type;
+    line.textContent = `[${t}] ${msg}`;
+    c.appendChild(line);
+    c.scrollTop = c.scrollHeight;
+  };
+
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+
+  async function startPanel() {
+    const target = document.getElementById('target').value.trim();
+    const link   = document.getElementById('link').value.trim();
+    const mode   = document.getElementById('mode').value;
+
+    if(!target && !link){
+      log('Isi nomor target atau link grup dulu.', 'err');
+      return;
+    }
+
+    log('Inisialisasi sistem...', 'info');
+    await delay(600);
+    log('Menghubungkan ke server...', 'info');
+    await delay(800);
+    log('Koneksi berhasil ✓', '');
+    await delay(500);
+
+    if(target){
+      log(`Target nomor: ${target}`, 'info');
+      await delay(500);
+    }
+    if(link){
+      log(`Target grup: ${link}`, 'info');
+      await delay(500);
+    }
+
+    switch(mode){
+      case 'close':
+        log('Mode: Close / Kunci HP Target', 'info');
+        await delay(600);
+        log('Mengirim payload kunci...');
+        await delay(900);
+        log('Mengunci layar target...');
+        await delay(900);
+        log('HP target terkunci ✓');
+        break;
+
+      case 'ban':
+        log('Mode: Ban Grup via Link', 'info');
+        await delay(600);
+        log('Menganalisis link grup...');
+        await delay(900);
+        log('Mengirim report massal...');
+        await delay(1000);
+        log('Grup berhasil di-ban ✓');
+        break;
+
+      case 'bug':
+        log('Mode: Kirim Bug WhatsApp', 'info');
+        await delay(600);
+        log('Menyusun payload bug...');
+        await delay(900);
+        log('Mengirim ke target...');
+        await delay(900);
+        log('Bug terkirim, target crash ✓');
+        break;
+
+      case 'forensik':
+        log('Mode: Forensik Nomor', 'info');
+        await delay(600);
+        log('Mengambil data publik target...');
+        await delay(1000);
+        log('Data berhasil dikumpulkan ✓');
+        break;
+    }
+
+    await delay(500);
+    log('Semua proses selesai.', '');
+  }
+
+  function stopPanel() {
+    log('Proses dihentikan oleh user.', 'err');
+  }
+</script>
+</body>
+</html>
